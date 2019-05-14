@@ -67,7 +67,8 @@ base_url="https://www.artstation.com/"
 # https://www.artstation.com/maddam
 # https://www.artstation.com/maddam/store
 # https://www.artstation.com/maddam/likes
-
+# https://www.artstation.com/search/artists?q=kk
+# https://www.artstation.com/artwork/LW84w
 webSession = requests.session()
 webSession.cookies = cookielib.LWPCookieJar(filename=tmp_path+"cookie.txt")
 
