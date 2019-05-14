@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 #-*- coding:utf-8 -*-
 
+# web crawler for artstation
+# author : wangzhen <wangzhenjjcn@gmail.com> since 2019-03-15
+
 
 import json
 import os
@@ -50,6 +53,7 @@ CURRENT_PATH = os.path.dirname(os.path.realpath(__file__))
 LOG_LEVEL = logging.INFO
 LOG_FILE = 'download.log' or False
 LOG_FORMAT = ''
+
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.115 Safari/537.36'
 }
@@ -57,8 +61,16 @@ HEADERS = {
 download_path = "./downloads/"
 tmp_path = download_path+"/tmp/"
 base_url="https://www.artstation.com/"
+
+# https://www.artstation.com/artwork/QzaRRx
+# https://www.artstation.com/contests
+# https://www.artstation.com/maddam
+# https://www.artstation.com/maddam/store
+# https://www.artstation.com/maddam/likes
+
 webSession = requests.session()
 webSession.cookies = cookielib.LWPCookieJar(filename=tmp_path+"cookie.txt")
+
 defaultHeader = {
     'upgrade-insecure-requests': "1",
     'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36",
@@ -67,6 +79,7 @@ defaultHeader = {
     'accept-encoding': "gzip, deflate",
     'accept-language': "zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7,ja;q=0.6",
     'cache-control': "no-cache"}
+
 ajaxheaders = {
     'upgrade-insecure-requests': "1",
     'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36",
