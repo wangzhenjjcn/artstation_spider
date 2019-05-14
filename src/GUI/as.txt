@@ -1,0 +1,1 @@
+require last version Windows 7 or OSX 10.10+ or Windows 8/10 or later
