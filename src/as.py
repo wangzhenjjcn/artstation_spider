@@ -56,7 +56,7 @@ HEADERS = {
 
 download_path = "./downloads/"
 tmp_path = download_path+"/tmp/"
-
+base_url="https://www.artstation.com/"
 webSession = requests.session()
 webSession.cookies = cookielib.LWPCookieJar(filename=tmp_path+"cookie.txt")
 defaultHeader = {
