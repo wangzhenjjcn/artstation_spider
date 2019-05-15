@@ -1,0 +1,3 @@
+#LWP-Cookies-2.0
+Set-Cookie3: _ArtStation_session="Z0oyTnFoNmJ2UFhpc2hUOEpoRTJrcXluZ05XL0t1Q0ZUQitaZ2hWRllReEV6SUJ4RzkzZHkweU54WExSeXM4K1FPcWhpeWRNZUhkV1RFMXdHMXhVZzFxZUtaR2ZEc2wyQkFJSGFzdzVib3dYMzM1c29QeXFRWDZLQTNPL0YxeGVTN3Zib2orWnhYTWlSSVFSd21OYUIwRmdUcnlDbVBORENBMmpUN0FKVnJGd2tQcnVNdmVNWVptYVpwa2h0UDFKM1hLWmFhNG1kZjl4ZE1BUE5ScWtza2hiRFBqai9yWFc1NW9hNE1aY2lyUT0tLXhOSTZUdFlFdXpML1BYSkpOZEdvdHc9PQ%3D%3D--fb0017eaf213be42306d74ddf8205bc82d1ca3bd"; path="/"; domain=".artstation.com"; path_spec; domain_dot; secure; expires="2019-05-15 15:55:15Z"; HttpOnly=None; version=0
+Set-Cookie3: __cfduid=df5cbd908764158c1aeb543a4104139da1557930315; path="/"; domain=".artstation.com"; path_spec; domain_dot; secure; expires="2020-05-14 14:25:15Z"; HttpOnly=None; version=0

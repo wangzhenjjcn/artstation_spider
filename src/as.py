@@ -69,6 +69,12 @@ base_url="https://www.artstation.com/"
 # https://www.artstation.com/maddam/likes
 # https://www.artstation.com/search/artists?q=kk
 # https://www.artstation.com/artwork/LW84w
+
+if not os.path.exists(download_path):
+    os.mkdir(download_path)
+if not os.path.exists(tmp_path):
+    os.mkdir(tmp_path)
+ 
 webSession = requests.session()
 webSession.cookies = cookielib.LWPCookieJar(filename=tmp_path+"cookie.txt")
 
@@ -85,11 +91,11 @@ ajaxheaders = {
     'upgrade-insecure-requests': "1",
     'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36",
     'dnt': "1",
-    'accept-encoding': "gzip, deflate",
+    'accept-encoding': "gzip, deflate, br",
     'x-requested-with': "XMLHttpRequest",
     'accept-language': "zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7,ja;q=0.6",
     'cache-control': "no-cache",
-    'accept': "application/json, text/javascript, */*; q=0.01",}
+    'accept': "application/json, text/plain, */*; q=0.01",}
 
 #global data_resault,data_download,data_playing
 
@@ -102,11 +108,11 @@ class Application_ui(Frame):
         self.master.title('')
         self.master.geometry('')
         self.master.resizable(0,0)
-
+        pageurl=" "
+        getpagedata(pageurl)
 
     def createWidgets(self):
         self.top = self.winfo_toplevel()
-
         self.style = Style()
 
 
@@ -116,6 +122,36 @@ class Application(Application_ui):
         Application_ui.__init__(self, master)
         
         
+
+
+
+def getpagedata(pageurl):
+   
+    print("URL:"+str(pageurl))
+    # https://www.artstation.com/maddam
+    # https://www.artstation.com/api/v2/cart/guest/count.json?cart_token=&visitor_uuid=xxxxxxxxxxxxxxxxxxxxxxxxxx
+    # https://www.artstation.com/users/maddam/projects.json?page=1
+
+    openPage("https://www.artstation.com/maddam",defaultHeader)
+    # openPage("https://www.artstation.com/api/v2/cart/guest/count.json?cart_token=&visitor_uuid=",ajaxheaders)
+
+def openPage(url,webheader):
+
+    print("Open:"+url)
+    responseRes=webSession.get(url,  headers = webheader,verify=False )
+    print(responseRes.cookies.values()) 
+    webSession.cookies.save()
+    # responseRes.cookies.save()
+    print("")
+
+    print(f"statusCode = {responseRes.status_code}" +":"+url)
+    print(f"text = {responseRes.text}")
+     
+
+
+
+
+
 
 
 def word_align(_string, _length, _type='L'):
