@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 #-*- coding:utf-8 -*-
-
 # web crawler for artstation
 # author : wangzhen <wangzhenjjcn@gmail.com> since 2019-03-15
-
-
 import json
 import os
 import re
@@ -20,7 +17,15 @@ import urllib.error
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
+ 
+from concurrent import futures
+from multiprocessing import cpu_count
+from urllib.parse import urlparse
 
+import pafy
+import random
+import math
+import js2py
 
 try:
     from tkinter import *
@@ -120,37 +125,202 @@ class Application(Application_ui):
     #这个类实现具体的事件处理回调函数。界面生成代码在Application_ui中。
     def __init__(self, master=None):
         Application_ui.__init__(self, master)
-        
-        
+        # if log_print:
+        #     global print
+        #     print = log_print
+        max_workers = cpu_count()*4
+        self.executor = futures.ThreadPoolExecutor(max_workers)
+        self.executor_video = futures.ThreadPoolExecutor(1)
+        self.root_path = None
+        self.futures = []
+        self.session = requests.session()
+        self.session.cookies = cookielib.LWPCookieJar(filename=tmp_path+"cookie.txt")
+
+    
+
+    def log(self, message):
+        print(message)
+
+    def download_file(self, url, file_path, file_name):
+        file_full_path = os.path.join(file_path, file_name)
+        if os.path.exists(file_full_path):
+            self.log('[Exist][image][{}]'.format(file_full_path))
+        else:
+            r = self.session.get(url)
+            os.makedirs(file_path, exist_ok=True)
+            with open(file_full_path, "wb") as code:
+                code.write(r.content)
+            self.log('[Finish][image][{}]'.format(file_full_path))
+
+    def download_video(self, id, file_path):
+        file_full_path = os.path.join(file_path, "{}.{}".format(id, 'mp4'))
+        if os.path.exists(file_full_path):
+            self.log('[Exist][video][{}]'.format(file_full_path))
+        else:
+            video = pafy.new(id)
+            best = video.getbest(preftype="mp4")
+            r = self.session.get(best.url)
+            os.makedirs(file_path, exist_ok=True)
+            with open(file_full_path, "wb") as code:
+                code.write(r.content)
+            self.log('[Finish][video][{}]'.format(file_full_path))
+
+    def download_project(self, hash_id):
+        url = 'https://www.artstation.com/projects/{}.json'.format(hash_id)
+        r = self.session.get(url)
+        j = r.json()
+        assets = j['assets']
+        title = j['slug'].strip()
+        # self.log('=========={}=========='.format(title))
+        username = j['user']['username']
+        for asset in assets:
+            assert(self.root_path)
+            user_path = os.path.join(self.root_path, username)
+            os.makedirs(user_path, exist_ok=True)
+            file_path = os.path.join(user_path, title)
+            if not self.no_image and asset['has_image']:  # 包含图片
+                url = asset['image_url']
+                file_name = urlparse(url).path.split('/')[-1]
+                try:
+                    self.futures.append(self.executor.submit(self.download_file,
+                                                                url, file_path, file_name))
+                except Exception as e:
+                    print(e)
+            if not self.no_video and asset['has_embedded_player']:  # 包含视频
+                player_embedded = asset['player_embedded']
+                id = re.search(
+                    r'(?<=https://www\.youtube\.com/embed/)[\w_]+', player_embedded).group()
+                try:
+                    self.futures.append(self.executor_video.submit(
+                        self.download_video, id, file_path))
+                except Exception as e:
+                    print(e)
+
+    def get_projects(self, username):
+        data = []
+        if username is not '':
+            page = 0
+            while True:
+                page += 1
+                url = 'https://www.artstation.com/users/{}/projects.json?page={}'.format(
+                    username, page)
+                r = self.session.get(url)
+                if not r.ok:
+                    err = "[Error] [{} {}] ".format(r.status_code, r.reason)
+                    if r.status_code == 403:
+                        self.log(err + "You are blocked by artstation")
+                    elif r.status_code == 404:
+                        self.log(err + "Username not found")
+                    else:
+                        self.log(err + "Unknown error")
+                    break
+                j = r.json()
+                total_count = int(j['total_count'])
+                if total_count == 0:
+                    self.log("[Error] Please input right username")
+                    break
+                if page is 1:
+                    self.log('\n==========[{}] BEGIN=========='.format(username))
+                data_fragment = j['data']
+                data += data_fragment
+                self.log('\n==========Get page {}/{}=========='.format(page,
+                                                                        total_count // 50 + 1))
+                if page > total_count / 50:
+                    break
+        return data
+
+    def download_by_username(self, username):
+        data = self.get_projects(username)
+        if len(data) is not 0:
+            future_list = []
+            for project in data:
+                future = self.executor.submit(
+                    self.download_project, project['hash_id'])
+                future_list.append(future)
+            futures.wait(future_list)
+
+    def download_by_usernames(self, usernames, type):
+        self.no_image = type == 'video'
+        self.no_video = type == 'image'
+        # 去重与处理网址
+        username_set = set()
+        for username in usernames:
+            username = username.strip().split('/')[-1]
+            if username not in username_set:
+                username_set.add(username)
+                self.download_by_username(username)
+        futures.wait(self.futures)
+        self.log("\n========ALL DONE========")
 
 
+def genUUid():
+#############全########网######唯######一#######可######以######使######用#########精#####华#####在#######此#####
+#   e = (new Date).getTime(),
+#             window.performance && "function" == typeof window.performance.now && (e += performance.now()),
+#             t = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(t) {
+#                 var o;
+#                 return o = (e + 16 * Math.random()) % 16 | 0,
+#                 e = Math.floor(e / 16),
+#                 ("x" === t ? o : 3 & o | 8).toString(16)
+#             })
+# performance.now()方法返回当前网页从performance.timing.navigationStart到当前时间之间的微秒数，其精度可达100万分之一秒。
+# performance.now()近似等于Date.now()，但前者返回的是毫秒，后者返回的是微秒，后者的精度比前者高1000倍。
+    aUUID = js2py.eval_js('function(){var e,t;return e=(new Date).getTime(),window.performance&&"function"==typeof window.performance.now&&(e+=performance.now()),t="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,function(t){var o;return o=(e+16*Math.random())%16|0,e=Math.floor(e/16),("x"===t?o:3&o|8).toString(16)})};') 
+    return aUUID()
+#############全########网######唯######一#######可######以######使######用#########精#####华#####在#######此#####
 
 def getpagedata(pageurl):
-   
     print("URL:"+str(pageurl))
     # https://www.artstation.com/maddam
     # https://www.artstation.com/api/v2/cart/guest/count.json?cart_token=&visitor_uuid=xxxxxxxxxxxxxxxxxxxxxxxxxx
     # https://www.artstation.com/users/maddam/projects.json?page=1
-
-    openPage("https://www.artstation.com/maddam",defaultHeader)
+    # webSession.cookies['visitor-uuid']=genUUid()
+    # webSession.save()
+    # webSession.cookies.set('visitor-uuid', genUUid(), path='/', domain='www.artstation.com')
+    webSession.cookies.set_cookie(cookielib.Cookie(version=0,name='visitor-uuid',value=genUUid(),
+                     domain='.artstation.com',
+                    path='/',
+                    port='80',port_specified=False,  
+                    domain_specified=True,domain_initial_dot=False 
+                     , path_specified=True,
+                    secure=None, rest={},
+                    expires=  None,
+                    discard=False,comment=None, comment_url=None, rfc2109=False))
+    # webSession.cookies.save()
+    webSession.cookies.save()
+    mainpage=openPage("https://www.artstation.com/",defaultHeader)
+    pageone=openPage("https://www.artstation.com/maddam/projects.json?page=1",defaultHeader)
     # openPage("https://www.artstation.com/api/v2/cart/guest/count.json?cart_token=&visitor_uuid=",ajaxheaders)
+    # if not pageone.ok:
+    #     print("ERR CODE:"+str(pageone.status_code))
+    #     return
+    # j = pageone.json()
+    # total_count = int(j['total_count'])
+    # print("total_count:"+str(total_count))
+    # print(pageone.cookies.values()) 
+    # webSession.cookies.save()
+    # print(pageone)
+
+
 
 def openPage(url,webheader):
-
     print("Open:"+url)
-    responseRes=webSession.get(url,  headers = webheader,verify=False )
-    print(responseRes.cookies.values()) 
+    responseRes=webSession.get(url,  headers = webheader,verify=False ) 
     webSession.cookies.save()
-    # responseRes.cookies.save()
-    print("")
-
-    print(f"statusCode = {responseRes.status_code}" +":"+url)
-    print(f"text = {responseRes.text}")
+    if not responseRes.ok:
+        print("ERR CODE:"+str(responseRes.status_code))
+        return 
+    return responseRes
+    # j = responseRes.json()
+    # total_count = int(j['total_count'])
+    # print("total_count:"+str(total_count))
+    # print(responseRes.cookies.values()) 
+    # webSession.cookies.save()
+    # # responseRes.cookies.save()
+    # print("")
+    # print(f"statusCode = {responseRes.status_code}" +":"+url)
+    # print(f"text = {responseRes.text}")
      
-
-
-
-
 
 
 
@@ -267,3 +437,4 @@ if __name__ == "__main__":
     Application(top).mainloop()
     try: top.destroy()
     except: pass
+    
